@@ -21,6 +21,7 @@ The default platform is `osx`. You can type `tldr -o`(eg: `tldr apt-get -o linux
 The workflow code and the bundled [Alfred-PyWorkflow][alfred-pyworkflow] library are
 under the [MIT Licence][mit-licence].
 
+[alfred-pyworkflow]: https://github.com/harrtho/alfred-pyworkflow
 [demo]: screenshot.gif
 [downloads-shield]: https://img.shields.io/github/downloads/harrtho/alfred-tldr/total.svg
 [licence-shield]: https://img.shields.io/github/license/harrtho/alfred-tldr.svg
