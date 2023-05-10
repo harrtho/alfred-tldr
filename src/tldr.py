@@ -289,7 +289,6 @@ def main(wf):
     wf.start_update()
 
   if len(wf.args):
-    log.debug("HIER")
     query(wf.args[0])
     wf.send_feedback()
 
