@@ -110,6 +110,8 @@
 			<integer>70</integer>
 		</dict>
 	</dict>
+	<key>version</key>
+	<string>1.0.0</string>
 	<key>webaddress</key>
 	<string>https://github.com/harrtho/alfred-tldr</string>
 </dict>
