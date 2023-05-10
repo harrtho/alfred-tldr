@@ -69,8 +69,7 @@
 				<key>runningsubtext</key>
 				<string>updating...</string>
 				<key>script</key>
-				<string>import tldr
-tldr.query('{query}')</string>
+				<string>/usr/bin/env python3 tldr.py '{query}'</string>
 				<key>scriptargtype</key>
 				<integer>0</integer>
 				<key>scriptfile</key>
@@ -80,7 +79,7 @@ tldr.query('{query}')</string>
 				<key>title</key>
 				<string>tldr</string>
 				<key>type</key>
-				<integer>3</integer>
+				<integer>5</integer>
 				<key>withspace</key>
 				<true/>
 			</dict>

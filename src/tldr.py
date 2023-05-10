@@ -1,22 +1,31 @@
-# -*- coding: utf_8 -*-
-# author www.chedanji.com
+#!/usr/bin/env python3
+# encoding: utf-8
+#
+# Copyright (c) 2023 Thomas Harr <xDevThomas@gmail.com>
+# Copyright (c) 2017 www.chedanji.com
 
-from xml.etree import ElementTree as etree
-from xml.etree.ElementTree import Element, SubElement, ElementTree
-import subprocess
-from xml.dom import minidom
-import os
-import time
-import io
-import json
-import getopt
 import datetime
-import urllib2
+import getopt
+import json
+import os
 import re
+import subprocess
+import sys
+import time
 
-alfred_workflow_data = os.environ['alfred_workflow_data']
-repo_directory = alfred_workflow_data + '/tldr'
+from workflow import Workflow, web
+
+# GitHub repo for self-updating
+UPDATE_SETTINGS = {'github_slug': 'cs1707/tldr-alfred'}
+
+# GitHub Issues
+HELP_URL = 'https://github.com/cs1707/tldr-alfred/issues'
+
+# Cache Update frequency in days
+CACHE_TTL = 7
+
 default_platform = 'osx'
+
 
 def query(query):
   global default_platform
@@ -43,7 +52,6 @@ def query(query):
       'valid': 'no'
     }]
   else:
-    # output_title(command)
     rowList = parse_man_page(command)
     if(len(rowList) == 0):
       rowList = hint(command, default_platform)
@@ -56,16 +64,14 @@ def query(query):
         'title': 'Page not found',
         'valid': 'no'
       }]
-  print gen_xml(rowList)
+  gen_feedback(rowList)
+
 
 def find_page_location(command):
-
-  with io.open(os.path.join(alfred_workflow_data, 'index.json'),
-               encoding='utf-8') as f:
-    index = json.load(f)
+  index = wf.cached_data('index', download_index, CACHE_TTL * 86400)
   command_list = [item['name'] for item in index['commands']]
   if command not in command_list:
-    return os.path.join(os.path.join(repo_directory, 'pages'),
+    return os.path.join(os.path.join(wf.cachedir, 'tldr', 'pages'),
                     os.path.join("common", command + '.md'))
 
   supported_platforms = index['commands'][
@@ -79,13 +85,13 @@ def find_page_location(command):
 
   if not platform:
     return
-  page_path = os.path.join(os.path.join(repo_directory, 'pages'),
+  page_path = os.path.join(os.path.join(wf.cachedir, 'tldr', 'pages'),
                         os.path.join(platform, command + '.md'))
   return page_path
 
 def parse_page(page):
-  with io.open(page, encoding='utf-8') as f:
-    lines = f.readlines()
+  with open(page, encoding='utf-8') as f:
+    lines = list(f)
 
   if (len(lines) <= 0):
     return []
@@ -96,11 +102,11 @@ def parse_page(page):
   else:
     return parse_new_page(lines)
 
+
 def parse_old_page(lines):
   row_list = []
   uid = 1
   item = {}
-  description = {}
   for line in lines:
     if line.startswith('#'):
       continue
@@ -114,6 +120,7 @@ def parse_old_page(lines):
 
     uid += 1
   return row_list
+
 
 def parse_new_page(lines):
   row_list = []
@@ -138,60 +145,62 @@ def parse_new_page(lines):
 
   return row_list
 
+
 def parse_man_page(command):
+  """Parse the man page if exist and return
+
+  Args:
+      command (str): The command whose man page is to be parsed
+
+  Returns:
+      list: Parsed sub-commands and description
+  """
   page_path = find_page_location(command)
   if page_path and os.path.exists(page_path):
     return parse_page(page_path)
-
   return []
 
-def gen_xml(rowList):
-  items = Element('items')
 
+def gen_feedback(rowList):
   for row in rowList:
-    item = SubElement(items, 'item')
-    item.set('autocomplete', row.get('autocomplete') or '')
-    item.set('uid', row.get('uid') or '')
-    item.set('arg', row.get('title') or '')
-    item.set('valid', row.get('valid') or '')
+    wf.add_item(
+      row.get('title') or '',
+      row.get('subtitle') or '',
+      row.get('title') or '',
+      row.get('autocomplete') or '',
+      False if row.get('valid') == 'no' else True,
+      row.get('uid') or '',
+      row.get('icon'))
 
-    title = SubElement(item, 'title')
-    title.text = row.get('title') or ''
-
-    subtitle = SubElement(item, 'subtitle')
-    subtitle.text = row.get('subtitle') or ''
-
-    icon = SubElement(item, 'icon')
-    icon.text = row.get('icon')
-
-  tree = minidom.parseString(etree.tostring(items))
-  return tree.toxml()
 
 def output_title(msg):
-  print gen_xml([{
-        'uid': str(time.time()),
-        'arg': '',
-        'autocomplete': '',
-        'icon': 'icon.png',
-        'title': str(msg),
-        'valid': 'no'
-      }])
+  wf.add_item(
+    str(msg),
+    uid=str(time.time()),
+    icon='icon.png',
+    valid=False)
+
 
 def clone():
-  if(not os.path.exists(alfred_workflow_data)):
-    os.mkdir(alfred_workflow_data)
+  """Clone the man page repository into the workflow cache
 
-  if(not os.path.exists(repo_directory)):
-    child = subprocess.Popen(['git clone https://github.com/tldr-pages/tldr.git ' + '"' + str(repo_directory) + '"'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    success, err = child.communicate()
-    if child.returncode:
-      raise Exception(err)
-    download_index()
+  Raises:
+      Exception: Raises an exception if the git clone returns a none zero value
+  """
+  tldr_cache = os.path.join(wf.cachedir, 'tldr')
+  if not os.path.exists(tldr_cache):
+    cmd = ['git', 'clone', 'https://github.com/tldr-pages/tldr.git', tldr_cache]
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    stdout, _ = p.communicate()
+    if p.returncode:
+      raise Exception(f'Unknown clone error: {stdout}')
+
 
 def update(days=0):
-  if days > 0 and os.path.exists(os.path.join(alfred_workflow_data, 'config.json')):
-    with io.open(os.path.join(alfred_workflow_data, 'config.json'),
-        encoding='utf-8') as f:
+  tldr_cache = os.path.join(wf.cachedir, 'tldr')
+  config_path = os.path.join(wf.datadir, 'config.json')
+  if days > 0 and os.path.exists(config_path):
+    with open(config_path, encoding='utf-8') as f:
       try:
         config = json.load(f)
       except:
@@ -199,22 +208,22 @@ def update(days=0):
 
     if (datetime.datetime.now().date() - datetime.datetime.strptime(config['update_date'], '%Y%m%d').date()).days < days:
       return
-  os.chdir(repo_directory)
-  local = subprocess.check_output('git rev-parse master'.split()).strip()
+  os.chdir(tldr_cache)
+  local = subprocess.check_output('git rev-parse main'.split()).strip()
   remote = subprocess.check_output(
     'git ls-remote https://github.com/tldr-pages/tldr/ HEAD'.split()
   ).split()[0]
 
   if local != remote:
-    subprocess.check_call('git checkout master'.split())
+    subprocess.check_call('git checkout main'.split())
     subprocess.check_call('git pull --rebase'.split())
 
-  with io.open(os.path.join(alfred_workflow_data, 'config.json'), mode='wb') as f:
+  with open(config_path, mode='w') as f:
     data = {
       'update_date': datetime.datetime.now().strftime('%Y%m%d')
     }
     json.dump(data, f)
-    download_index()
+    wf.cached_data('index', download_index, 1)
 
 
 def parse_args(query=''):
@@ -241,23 +250,20 @@ def parse_args(query=''):
 
 
 def download_index():
+  """Download the tldr index
+
+  Returns:
+      dict: The loaded index dictionary
+  """
   url = 'http://tldr.sh/assets/index.json'
-  req = urllib2.Request(url, headers={'User-Agent' : "Magic Browser"})
-  try:
-    res = urllib2.urlopen(req)
-  except urllib2.HTTPError,e:
-    print(e)
-    return
-  with io.open(os.path.join(alfred_workflow_data, 'index.json'), mode='wb') as f:
-    f.write(res.read())
+  response = web.get(url)
+  return response.json()
 
 def hint(command, platform=''):
   if (len(command) == 0):
     return []
 
-  with io.open(os.path.join(alfred_workflow_data, 'index.json'),
-               encoding='utf-8') as f:
-    index = json.load(f)
+  index = wf.cached_data('index', download_index, CACHE_TTL * 86400)
 
   result = []
   for item in index['commands']:
@@ -276,3 +282,20 @@ def hint(command, platform=''):
         'valid': 'no'
       })
   return result
+
+
+def main(wf):
+  if wf.update_available:
+    wf.start_update()
+
+  if len(wf.args):
+    log.debug("HIER")
+    query(wf.args[0])
+    wf.send_feedback()
+
+
+if __name__ == '__main__':
+    wf = Workflow(update_settings=UPDATE_SETTINGS,
+                  help_url=HELP_URL)
+    log = wf.logger
+    sys.exit(wf.run(main))
