@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>bundleid</key>
-	<string>com.chedanji.tldr</string>
+	<string>de.xdevcloud.alfred-tldr</string>
 	<key>connections</key>
 	<dict>
 		<key>6C68D0BB-A89A-4FDD-BB99-B5A5B460646E</key>
@@ -21,7 +21,7 @@
 		</array>
 	</dict>
 	<key>createdby</key>
-	<string>xiaopeng</string>
+	<string>Thomas Harr</string>
 	<key>description</key>
 	<string>A collection of simplified and community-driven man pages.</string>
 	<key>disabled</key>
@@ -111,6 +111,6 @@
 		</dict>
 	</dict>
 	<key>webaddress</key>
-	<string>www.chedanji.com</string>
+	<string>https://github.com/harrtho/alfred-tldr</string>
 </dict>
 </plist>

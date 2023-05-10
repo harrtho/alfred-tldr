@@ -16,10 +16,10 @@ import time
 from workflow import Workflow, web
 
 # GitHub repo for self-updating
-UPDATE_SETTINGS = {'github_slug': 'cs1707/tldr-alfred'}
+UPDATE_SETTINGS = {'github_slug': 'harrtho/alfred-tldr'}
 
 # GitHub Issues
-HELP_URL = 'https://github.com/cs1707/tldr-alfred/issues'
+HELP_URL = 'https://github.com/harrtho/alfred-tldr/issues'
 
 # Cache Update frequency in days
 CACHE_TTL = 7
