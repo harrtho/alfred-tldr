@@ -1,5 +1,9 @@
 # Alfred tldr
 
+[![GitHub Version][version-shield]][releases]
+[![GitHub All Releases][downloads-shield]][releases]
+[![GitHub][licence-shield]][mit-licence]
+
 Alfred workflow for [tldr][tldr]
 
 ![][demo]
@@ -18,5 +22,9 @@ The workflow code and the bundled [Alfred-PyWorkflow][alfred-pyworkflow] library
 under the [MIT Licence][mit-licence].
 
 [demo]: screenshot.gif
+[downloads-shield]: https://img.shields.io/github/downloads/harrtho/alfred-tldr/total.svg
+[licence-shield]: https://img.shields.io/github/license/harrtho/alfred-tldr.svg
 [mit-licence]: http://opensource.org/licenses/MIT
+[releases]: https://github.com/harrtho/alfred-tldr/releases
 [tldr]: https://github.com/tldr-pages/tldr
+[version-shield]: https://img.shields.io/github/release/harrtho/alfred-tldr.svg
